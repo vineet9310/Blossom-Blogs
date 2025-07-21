@@ -221,24 +221,31 @@ export const createPost = async (data: Omit<Post, 'id' | 'slug' | 'createdAt'>) 
   return new Promise(resolve => setTimeout(() => resolve(newPost), 200));
 };
 
-export const updatePost = async (id: string, data: Partial<Omit<Post, 'id' | 'createdAt'>>) => {
+export const updatePost = async (id: string, data: Partial<Omit<Post, 'id'|'slug'|'createdAt'>>) => {
   const postIndex = mockPosts.findIndex(p => p.id === id);
   if (postIndex === -1) {
     return null;
   }
   const originalPost = mockPosts[postIndex];
-  const updatedPost = {
+  
+  // Create the updated post object, making sure to handle all fields
+  const updatedPost: Post = {
     ...originalPost,
     ...data,
     slug: data.title ? createSlug(data.title) : originalPost.slug,
   };
+
   mockPosts[postIndex] = updatedPost;
+  
+  // Revalidate all necessary paths
   revalidatePath('/');
+  revalidatePath('/admin');
+  revalidatePath('/admin/posts');
   revalidatePath(`/posts/${originalPost.slug}`);
   if (originalPost.slug !== updatedPost.slug) {
     revalidatePath(`/posts/${updatedPost.slug}`);
   }
-  revalidatePath('/admin');
+  
   return new Promise(resolve => setTimeout(() => resolve(updatedPost), 200));
 };
 
