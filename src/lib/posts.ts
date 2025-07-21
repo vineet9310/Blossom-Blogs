@@ -2,15 +2,17 @@
 'use server';
 
 import type { Post } from '@/types';
-import {
-  subDays,
-  format
-} from 'date-fns';
+import { subDays, format } from 'date-fns';
 import { revalidatePath } from 'next/cache';
+import fs from 'fs/promises';
+import path from 'path';
+
+// Use a temporary file to persist data across server reloads in development
+const dataFilePath = path.join(process.cwd(), '.tmp', 'posts.json');
 
 const now = new Date();
 
-let mockPosts: Post[] = [
+const initialMockPosts: Post[] = [
   {
     id: '1',
     slug: 'getting-started-with-nextjs-14',
@@ -182,6 +184,24 @@ Let's work together to create a healthier planet for future generations.
   }
 ];
 
+// Helper to ensure the data file exists and read it
+const readPosts = async (): Promise<Post[]> => {
+  try {
+    await fs.mkdir(path.dirname(dataFilePath), { recursive: true });
+    await fs.access(dataFilePath);
+  } catch {
+    // If file doesn't exist, create it with initial data
+    await fs.writeFile(dataFilePath, JSON.stringify(initialMockPosts, null, 2));
+  }
+  const data = await fs.readFile(dataFilePath, 'utf-8');
+  return JSON.parse(data);
+};
+
+// Helper to write data to the file
+const writePosts = async (posts: Post[]): Promise<void> => {
+  await fs.writeFile(dataFilePath, JSON.stringify(posts, null, 2));
+};
+
 // Helper to create a slug from a title
 const createSlug = (title: string) => {
   return title
@@ -192,42 +212,52 @@ const createSlug = (title: string) => {
     .replace(/-+/g, '-');
 };
 
-// Simulate an API call
-export const getPosts = async (): Promise < Post[] > => {
-  const sortedPosts = [...mockPosts].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  return new Promise(resolve => setTimeout(() => resolve(sortedPosts), 200));
+// API-like functions
+export const getPosts = async (): Promise<Post[]> => {
+  const posts = await readPosts();
+  return posts.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 };
 
-export const getPostBySlug = async (slug: string): Promise < Post | null > => {
-  const post = mockPosts.find(p => p.slug === slug);
-  return new Promise(resolve => setTimeout(() => resolve(post || null), 200));
+export const getPostBySlug = async (slug: string): Promise<Post | null> => {
+  const posts = await readPosts();
+  const post = posts.find(p => p.slug === slug);
+  return post || null;
 };
 
-export const getAllTags = async (): Promise < string[] > => {
-  const tags = new Set(mockPosts.flatMap(p => p.tags));
-  return new Promise(resolve => setTimeout(() => resolve(Array.from(tags)), 100));
+export const getAllTags = async (): Promise<string[]> => {
+  const posts = await readPosts();
+  const tags = new Set(posts.flatMap(p => p.tags));
+  return Array.from(tags);
 };
 
 // CUD operations
-export const createPost = async (data: Omit<Post, 'id' | 'slug' | 'createdAt'>) => {
+export const createPost = async (data: Omit<Post, 'id' | 'slug' | 'createdAt'>): Promise<Post> => {
+  const posts = await readPosts();
   const newPost: Post = {
     ...data,
-    id: String(mockPosts.length + 1),
+    id: String(Date.now()), // Use timestamp for a more unique ID
     slug: createSlug(data.title),
     createdAt: format(new Date(), 'MMMM d, yyyy'),
   };
-  mockPosts.unshift(newPost); // Add to the beginning of the array
+  
+  posts.unshift(newPost); // Add to the beginning of the array
+  await writePosts(posts);
+
   revalidatePath('/', 'layout');
   revalidatePath('/admin', 'layout');
-  return new Promise(resolve => setTimeout(() => resolve(newPost), 200));
+  
+  return newPost;
 };
 
-export const updatePost = async (id: string, data: Partial<Omit<Post, 'id' | 'createdAt'>>) => {
-  const postIndex = mockPosts.findIndex(p => p.id === id);
+export const updatePost = async (id: string, data: Partial<Omit<Post, 'id' | 'createdAt'>>): Promise<Post | null> => {
+  let posts = await readPosts();
+  const postIndex = posts.findIndex(p => p.id === id);
+
   if (postIndex === -1) {
     return null;
   }
-  const originalPost = mockPosts[postIndex];
+
+  const originalPost = posts[postIndex];
 
   const updatedPost: Post = {
     ...originalPost,
@@ -235,27 +265,33 @@ export const updatePost = async (id: string, data: Partial<Omit<Post, 'id' | 'cr
     slug: data.title ? createSlug(data.title) : originalPost.slug,
   };
 
-  mockPosts[postIndex] = updatedPost;
-  
-  // Revalidate all necessary paths
+  posts[postIndex] = updatedPost;
+  await writePosts(posts);
+
   revalidatePath('/', 'layout');
   revalidatePath('/admin', 'layout');
   revalidatePath(`/posts/${originalPost.slug}`);
-  if (originalPost.slug !== updatedPost.slug) {
+  if (data.title && originalPost.slug !== updatedPost.slug) {
     revalidatePath(`/posts/${updatedPost.slug}`);
   }
   
-  return new Promise(resolve => setTimeout(() => resolve(updatedPost), 200));
+  return updatedPost;
 };
 
-export const deletePost = async (id: string) => {
-  const postIndex = mockPosts.findIndex(p => p.id === id);
+export const deletePost = async (id: string): Promise<Post | null> => {
+  let posts = await readPosts();
+  const postIndex = posts.findIndex(p => p.id === id);
+
   if (postIndex === -1) {
     return null;
   }
-  const [deletedPost] = mockPosts.splice(postIndex, 1);
+
+  const [deletedPost] = posts.splice(postIndex, 1);
+  await writePosts(posts);
+
   revalidatePath('/', 'layout');
   revalidatePath('/admin', 'layout');
   revalidatePath(`/posts/${deletedPost.slug}`);
-  return new Promise(resolve => setTimeout(() => resolve(deletedPost), 200));
+
+  return deletedPost;
 };

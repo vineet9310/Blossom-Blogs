@@ -1,0 +1,99 @@
+[
+  {
+    "id": "1",
+    "slug": "getting-started-with-nextjs-14",
+    "title": "Getting Started with Next.js 14",
+    "author": "Jane Doe",
+    "createdAt": "July 20, 2025",
+    "tags": [
+      "Tech",
+      "Next.js",
+      "Web Dev"
+    ],
+    "coverImage": "https://placehold.co/1200x600.png",
+    "content": "\n## Welcome to the Future of Web Development\n\nNext.js 14 brings a new level of performance and developer experience. In this post, we'll explore the key features and how to get started with building your first Next.js 14 application.\n\n### Key Features:\n- **Turbopack**: A new, high-speed bundler written in Rust.\n- **Server Actions**: Simplified data mutations without the need for API routes.\n- **App Router**: A new paradigm for building applications with nested layouts and routes.\n\n```javascript\n// Example of a Server Action\n'use server'\n \nexport async function myAction() {\n  // ...\n}\n```\n\nGetting started is as simple as running `npx create-next-app@latest`. Join us on this journey to build faster, more efficient web applications.\n    "
+  },
+  {
+    "id": "2",
+    "slug": "a-guide-to-mindful-design",
+    "title": "A Guide to Mindful Design",
+    "author": "John Smith",
+    "createdAt": "July 18, 2025",
+    "tags": [
+      "Design",
+      "UI/UX",
+      "Productivity"
+    ],
+    "coverImage": "https://placehold.co/1200x600.png",
+    "content": "\n## Designing with Intent\n\nMindful design is about creating interfaces that are not only beautiful but also intuitive and respectful of the user's attention. It's about making conscious choices that lead to better user experiences.\n\n### Principles of Mindful Design:\n1.  **Clarity over Clutter**: Prioritize essential information.\n2.  **Respect User's Time**: Make interactions efficient.\n3.  **Provide Feedback**: Ensure users know the result of their actions.\n\n> Good design is as little design as possible. - Dieter Rams\n\nBy applying these principles, we can create products that people love to use.\n    "
+  },
+  {
+    "id": "3",
+    "slug": "exploring-the-alps-a-travel-diary",
+    "title": "Exploring the Alps: A Travel Diary",
+    "author": "Alex Johnson",
+    "createdAt": "July 16, 2025",
+    "tags": [
+      "Travel",
+      "Adventure",
+      "Photography"
+    ],
+    "coverImage": "https://placehold.co/1200x600.png",
+    "content": "\n## A Journey Through the Mountains\n\nThe Alps are a breathtaking wonder of nature. This post is a collection of memories, photos, and tips from my 10-day trek through the Swiss Alps.\n\n![A beautiful mountain landscape](https://placehold.co/800x400.png)\n*A photo from the trail.*\n\n### Highlights:\n- **The Matterhorn**: Seeing the iconic peak at sunrise.\n- **Local Cuisine**: Cheese fondue is a must-try!\n- **Hiking Trails**: Routes for all skill levels.\n\nWhether you're an avid hiker or just love beautiful scenery, the Alps are a destination that should be on your list.\n    "
+  },
+  {
+    "id": "4",
+    "slug": "the-rise-of-generative-ai",
+    "title": "The Rise of Generative AI",
+    "author": "Samantha Bee",
+    "createdAt": "July 13, 2025",
+    "tags": [
+      "Tech",
+      "AI",
+      "Future"
+    ],
+    "coverImage": "https://placehold.co/1200x600.png",
+    "content": "\n## A New Era of Technology\n\nGenerative AI is transforming industries, from art and music to software development. Models like GPT-4 and DALL-E are capable of creating novel content that was once thought to be exclusively human.\n\n### How does it work?\nGenerative models are trained on vast datasets and learn patterns to generate new, original outputs. This has profound implications for the future of work and creativity.\n\n```python\n# Example of using a pseudo-AI library\nfrom awesome_ai import Generator\n\ntext_generator = Generator(model=\"super-creative-v1\")\ngenerated_text = text_generator.prompt(\"Write a poem about robots.\")\nprint(generated_text)\n```\n\nThe potential is limitless, but it also raises important ethical questions that we must address as a society.\n    "
+  },
+  {
+    "id": "5",
+    "slug": "mastering-tailwind-css",
+    "title": "Mastering Tailwind CSS for Rapid UI Development",
+    "author": "Jane Doe",
+    "createdAt": "July 9, 2025",
+    "tags": [
+      "Tech",
+      "Web Dev",
+      "CSS"
+    ],
+    "coverImage": "https://placehold.co/1200x600.png",
+    "content": "\n## Build UIs Faster Than Ever\n\nTailwind CSS is a utility-first CSS framework that allows for rapid development without ever leaving your HTML. It's a different approach compared to frameworks like Bootstrap or Foundation, and it's incredibly powerful.\n\n### Why Tailwind?\n- **Highly Customizable**: Configure everything from colors to spacing.\n- **No Naming Conventions**: No more `.btn-primary--large` classes.\n- **Performance**: Ship only the CSS you actually use.\n\nIt has a learning curve, but once you get the hang of it, you'll be building beautiful, custom designs in record time.\n    "
+  },
+  {
+    "id": "6",
+    "slug": "the-art-of-storytelling-in-marketing",
+    "title": "The Art of Storytelling in Marketing",
+    "author": "John Smith",
+    "createdAt": "July 6, 2025",
+    "tags": [
+      "Marketing",
+      "Business",
+      "Storytelling"
+    ],
+    "coverImage": "https://placehold.co/1200x600.png",
+    "content": "\n## Connect with Your Audience on a Deeper Level\n\nFacts tell, but stories sell. In a crowded marketplace, storytelling is the most powerful tool to capture attention and build a loyal brand following.\n\n### Key Elements of a Great Brand Story:\n1.  **A Hero**: Your customer.\n2.  **A Goal**: What they want to achieve.\n3.  **An Obstacle**: The problem they face.\n4.  **A Guide**: Your brand, helping them succeed.\n\nBy weaving these elements into your marketing, you create a narrative that resonates emotionally with your audience.\n    "
+  },
+  {
+    "id": "7",
+    "slug": "sustainable-living-small-changes-big-impact",
+    "title": "Sustainable Living: Small Changes, Big Impact",
+    "author": "Emily White",
+    "createdAt": "July 1, 2025",
+    "tags": [
+      "Lifestyle",
+      "Sustainability"
+    ],
+    "coverImage": "https://placehold.co/1200x600.png",
+    "content": "\n## Living a Greener Life\n\nAdopting a sustainable lifestyle doesn't have to be overwhelming. Small, consistent changes can collectively make a huge difference for our planet.\n\n### Easy Steps to Start:\n- **Reduce, Reuse, Recycle**: The classic for a reason.\n- **Shop Local**: Support local farmers and reduce your carbon footprint.\n- **Conserve Water**: Shorter showers, fixing leaks, and being mindful of usage.\n\nLet's work together to create a healthier planet for future generations.\n"
+  }
+]
