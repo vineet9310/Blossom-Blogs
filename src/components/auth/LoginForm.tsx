@@ -44,7 +44,7 @@ export function LoginForm() {
       const result = await login(values);
       if (result.success) {
         toast({ title: 'Login Successful', description: 'Redirecting to dashboard...' });
-        router.push('/admin');
+        window.location.href = '/admin';
       } else {
         toast({
           title: 'Login Failed',
