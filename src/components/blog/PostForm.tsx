@@ -1,3 +1,4 @@
+
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -11,10 +12,13 @@ import { Textarea } from '@/components/ui/textarea';
 import type { Post } from '@/types';
 import { createPost, updatePost } from '@/lib/posts';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Sparkles, Image as ImageIcon } from 'lucide-react';
+import { Loader2, Sparkles, Image as ImageIcon, Upload, Link as LinkIcon } from 'lucide-react';
 import React from 'react';
 import { generatePostContent } from '@/ai/flows/generate-post-content';
 import { generateCoverImage } from '@/ai/flows/generate-cover-image';
+import { Card, CardContent } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import NextImage from 'next/image';
 
 const formSchema = z.object({
   title: z.string().min(2, {
@@ -26,7 +30,7 @@ const formSchema = z.object({
   tags: z.string().min(1, {
     message: 'Please add at least one tag.',
   }),
-  coverImage: z.string().url({ message: 'Please enter a valid URL.' }),
+  coverImage: z.string().min(1, { message: 'Please provide a cover image URL or upload a file.' }),
   content: z.string().min(10, {
     message: 'Content must be at least 10 characters.',
   }),
@@ -43,18 +47,21 @@ export default function PostForm({ post }: PostFormProps) {
   const [isGeneratingContent, setIsGeneratingContent] = React.useState(false);
   const [isGeneratingImage, setIsGeneratingImage] = React.useState(false);
 
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       title: post?.title || '',
       author: post?.author || '',
       tags: post?.tags.join(', ') || '',
-      coverImage: post?.coverImage || 'https://placehold.co/1200x600.png',
+      coverImage: post?.coverImage || '',
       content: post?.content || '',
     },
   });
   
   const isGenerating = isGeneratingContent || isGeneratingImage;
+  const coverImageValue = form.watch('coverImage');
 
   const handleGenerateContent = async () => {
     const title = form.getValues('title');
@@ -120,6 +127,24 @@ export default function PostForm({ post }: PostFormProps) {
     }
   };
 
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      if (file.size > 4 * 1024 * 1024) { // 4MB limit
+        toast({
+          title: "File too large",
+          description: "Please upload an image smaller than 4MB.",
+          variant: "destructive",
+        });
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        form.setValue('coverImage', reader.result as string, { shouldValidate: true });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
@@ -137,8 +162,9 @@ export default function PostForm({ post }: PostFormProps) {
         toast({ title: 'Success', description: 'Post created successfully.' });
       }
       router.push('/admin/posts');
-      router.refresh(); // To reflect changes in the posts list
+      router.refresh();
     } catch (error) {
+      console.error("Submission error:", error);
       toast({
         title: 'Error',
         description: 'Something went wrong. Please try again.',
@@ -196,19 +222,68 @@ export default function PostForm({ post }: PostFormProps) {
           name="coverImage"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Cover Image URL</FormLabel>
-              <div className="flex items-center gap-2">
-                <FormControl>
-                  <Input placeholder="https://example.com/image.png" {...field} disabled={isGenerating} />
-                </FormControl>
-                <Button type="button" variant="outline" size="icon" onClick={handleGenerateImage} disabled={isGenerating}>
-                    {isGeneratingImage ? <Loader2 className="animate-spin" /> : <ImageIcon />}
-                    <span className="sr-only">Generate Image with AI</span>
-                </Button>
-              </div>
-               <FormDescription>
-                You can also generate an image with AI based on the post title.
-              </FormDescription>
+              <FormLabel>Cover Image</FormLabel>
+              <Card>
+                <CardContent className="p-4 space-y-4">
+                  {coverImageValue ? (
+                    <div className="relative aspect-video w-full max-w-md mx-auto rounded-md overflow-hidden border">
+                      <NextImage
+                        src={coverImageValue}
+                        alt="Cover image preview"
+                        fill
+                        className="object-cover"
+                      />
+                    </div>
+                  ) : (
+                    <div className="aspect-video w-full max-w-md mx-auto rounded-md bg-muted flex items-center justify-center">
+                      <ImageIcon className="h-12 w-12 text-muted-foreground" />
+                    </div>
+                  )}
+
+                  <Tabs defaultValue="upload" className="w-full">
+                    <TabsList className="grid w-full grid-cols-2">
+                      <TabsTrigger value="upload"><Upload className="mr-2"/>Upload</TabsTrigger>
+                      <TabsTrigger value="url"><LinkIcon className="mr-2"/>URL</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="upload">
+                       <div className="flex flex-col items-center justify-center p-4 border-2 border-dashed rounded-md">
+                          <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()} disabled={isGenerating}>
+                              <Upload className="mr-2"/> Choose File
+                          </Button>
+                           <input
+                            type="file"
+                            ref={fileInputRef}
+                            onChange={handleFileChange}
+                            accept="image/png, image/jpeg, image/gif, image/webp"
+                            className="hidden"
+                          />
+                          <p className="text-xs text-muted-foreground mt-2">PNG, JPG, GIF, WEBP up to 4MB.</p>
+                       </div>
+                    </TabsContent>
+                    <TabsContent value="url">
+                      <div className="flex items-center gap-2">
+                         <FormControl>
+                            <Input placeholder="https://example.com/image.png" {...field} disabled={isGenerating} />
+                         </FormControl>
+                      </div>
+                    </TabsContent>
+                  </Tabs>
+                  
+                  <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                        <span className="w-full border-t" />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                        <span className="bg-card px-2 text-muted-foreground">Or</span>
+                    </div>
+                  </div>
+
+                  <Button type="button" variant="outline" className="w-full" onClick={handleGenerateImage} disabled={isGenerating}>
+                      {isGeneratingImage ? <Loader2 className="animate-spin mr-2" /> : <ImageIcon className="mr-2" />}
+                      Generate Image with AI
+                  </Button>
+                </CardContent>
+              </Card>
               <FormMessage />
             </FormItem>
           )}
@@ -221,7 +296,7 @@ export default function PostForm({ post }: PostFormProps) {
               <div className="flex justify-between items-center">
                 <FormLabel>Content (Markdown)</FormLabel>
                 <Button type="button" variant="outline" size="sm" onClick={handleGenerateContent} disabled={isGenerating}>
-                    {isGeneratingContent ? <Loader2 className="animate-spin" /> : <Sparkles className="mr-2" />}
+                    {isGeneratingContent ? <Loader2 className="animate-spin mr-2" /> : <Sparkles className="mr-2" />}
                     Generate with AI
                 </Button>
               </div>
@@ -242,3 +317,4 @@ export default function PostForm({ post }: PostFormProps) {
     </Form>
   );
 }
+
