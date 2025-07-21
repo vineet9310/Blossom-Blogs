@@ -11,9 +11,10 @@ import { Textarea } from '@/components/ui/textarea';
 import type { Post } from '@/types';
 import { createPost, updatePost } from '@/lib/posts';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Sparkles } from 'lucide-react';
+import { Loader2, Sparkles, Image as ImageIcon } from 'lucide-react';
 import React from 'react';
 import { generatePostContent } from '@/ai/flows/generate-post-content';
+import { generateCoverImage } from '@/ai/flows/generate-cover-image';
 
 const formSchema = z.object({
   title: z.string().min(2, {
@@ -39,7 +40,8 @@ export default function PostForm({ post }: PostFormProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
-  const [isGenerating, setIsGenerating] = React.useState(false);
+  const [isGeneratingContent, setIsGeneratingContent] = React.useState(false);
+  const [isGeneratingImage, setIsGeneratingImage] = React.useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -51,6 +53,8 @@ export default function PostForm({ post }: PostFormProps) {
       content: post?.content || '',
     },
   });
+  
+  const isGenerating = isGeneratingContent || isGeneratingImage;
 
   const handleGenerateContent = async () => {
     const title = form.getValues('title');
@@ -63,7 +67,7 @@ export default function PostForm({ post }: PostFormProps) {
         return;
     }
 
-    setIsGenerating(true);
+    setIsGeneratingContent(true);
     try {
         const result = await generatePostContent({ title });
         if (result.content) {
@@ -80,7 +84,39 @@ export default function PostForm({ post }: PostFormProps) {
             variant: 'destructive',
         });
     } finally {
-        setIsGenerating(false);
+        setIsGeneratingContent(false);
+    }
+  };
+
+  const handleGenerateImage = async () => {
+    const title = form.getValues('title');
+    if (!title) {
+        toast({
+            title: 'Title is required',
+            description: 'Please enter a title before generating an image.',
+            variant: 'destructive',
+        });
+        return;
+    }
+
+    setIsGeneratingImage(true);
+    try {
+        const result = await generateCoverImage({ title });
+        if (result.imageUrl) {
+            form.setValue('coverImage', result.imageUrl, { shouldValidate: true });
+            toast({ title: 'Image Generated', description: 'AI has generated the cover image.' });
+        } else {
+            throw new Error('AI did not return an image URL.');
+        }
+    } catch (error) {
+        console.error("AI image generation failed:", error);
+        toast({
+            title: 'Image Generation Failed',
+            description: 'Could not generate image. Please try again.',
+            variant: 'destructive',
+        });
+    } finally {
+        setIsGeneratingImage(false);
     }
   };
 
@@ -123,7 +159,7 @@ export default function PostForm({ post }: PostFormProps) {
             <FormItem>
               <FormLabel>Title</FormLabel>
               <FormControl>
-                <Input placeholder="Enter post title" {...field} />
+                <Input placeholder="Enter post title" {...field} disabled={isGenerating} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -136,7 +172,7 @@ export default function PostForm({ post }: PostFormProps) {
             <FormItem>
               <FormLabel>Author</FormLabel>
               <FormControl>
-                <Input placeholder="Enter author's name" {...field} />
+                <Input placeholder="Enter author's name" {...field} disabled={isGenerating} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -149,7 +185,7 @@ export default function PostForm({ post }: PostFormProps) {
             <FormItem>
               <FormLabel>Tags (comma-separated)</FormLabel>
               <FormControl>
-                <Input placeholder="e.g., Tech, AI, Next.js" {...field} />
+                <Input placeholder="e.g., Tech, AI, Next.js" {...field} disabled={isGenerating}/>
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -161,9 +197,18 @@ export default function PostForm({ post }: PostFormProps) {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Cover Image URL</FormLabel>
-              <FormControl>
-                <Input placeholder="https://example.com/image.png" {...field} />
-              </FormControl>
+              <div className="flex items-center gap-2">
+                <FormControl>
+                  <Input placeholder="https://example.com/image.png" {...field} disabled={isGenerating} />
+                </FormControl>
+                <Button type="button" variant="outline" size="icon" onClick={handleGenerateImage} disabled={isGenerating}>
+                    {isGeneratingImage ? <Loader2 className="animate-spin" /> : <ImageIcon />}
+                    <span className="sr-only">Generate Image with AI</span>
+                </Button>
+              </div>
+               <FormDescription>
+                You can also generate an image with AI based on the post title.
+              </FormDescription>
               <FormMessage />
             </FormItem>
           )}
@@ -176,12 +221,12 @@ export default function PostForm({ post }: PostFormProps) {
               <div className="flex justify-between items-center">
                 <FormLabel>Content (Markdown)</FormLabel>
                 <Button type="button" variant="outline" size="sm" onClick={handleGenerateContent} disabled={isGenerating}>
-                    {isGenerating ? <Loader2 className="animate-spin" /> : <Sparkles className="mr-2" />}
+                    {isGeneratingContent ? <Loader2 className="animate-spin" /> : <Sparkles className="mr-2" />}
                     Generate with AI
                 </Button>
               </div>
               <FormControl>
-                <Textarea placeholder="Write your post content here, or generate it with AI." {...field} rows={15} />
+                <Textarea placeholder="Write your post content here, or generate it with AI." {...field} rows={15} disabled={isGenerating} />
               </FormControl>
               <FormDescription>
                 The AI will generate content based on the post title.

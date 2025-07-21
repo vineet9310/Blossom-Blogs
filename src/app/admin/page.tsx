@@ -1,11 +1,12 @@
 import Link from 'next/link';
-import { getPosts } from '@/lib/posts';
+import { getPosts, getAllTags } from '@/lib/posts';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Newspaper, PlusCircle } from 'lucide-react';
+import { Newspaper, PlusCircle, Tag } from 'lucide-react';
 
 export default async function AdminDashboard() {
   const posts = await getPosts();
+  const tags = await getAllTags();
 
   return (
     <div>
@@ -28,6 +29,18 @@ export default async function AdminDashboard() {
             <div className="text-2xl font-bold">{posts.length}</div>
             <p className="text-xs text-muted-foreground">
               posts currently on the blog
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Tags</CardTitle>
+            <Tag className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{tags.length}</div>
+            <p className="text-xs text-muted-foreground">
+              unique tags across all posts
             </p>
           </CardContent>
         </Card>
