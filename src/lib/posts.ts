@@ -1,3 +1,5 @@
+'use server';
+
 import type { Post } from '@/types';
 import {
   subDays,
@@ -233,7 +235,9 @@ export const updatePost = async (id: string, data: Partial<Omit<Post, 'id' | 'cr
   mockPosts[postIndex] = updatedPost;
   revalidatePath('/');
   revalidatePath(`/posts/${originalPost.slug}`);
-  revalidatePath(`/posts/${updatedPost.slug}`);
+  if (originalPost.slug !== updatedPost.slug) {
+    revalidatePath(`/posts/${updatedPost.slug}`);
+  }
   revalidatePath('/admin');
   return new Promise(resolve => setTimeout(() => resolve(updatedPost), 200));
 };
