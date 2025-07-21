@@ -21,7 +21,10 @@ export async function login(credentials: z.infer<typeof loginSchema>) {
 
   // In a real app, you'd validate against a database.
   // For this demo, we'll use hardcoded credentials.
-  if (username === process.env.ADMIN_USERNAME || "admin" && password === process.env.ADMIN_PASSWORD || "password") {
+  const validUsername = process.env.ADMIN_USERNAME || 'admin';
+  const validPassword = process.env.ADMIN_PASSWORD || 'password';
+
+  if (username === validUsername && password === validPassword) {
     const session = { user: { name: username }, loggedIn: true };
     const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
 
