@@ -3,10 +3,11 @@ import {
   subDays,
   format
 } from 'date-fns';
+import { revalidatePath } from 'next/cache';
 
 const now = new Date();
 
-const mockPosts: Post[] = [
+let mockPosts: Post[] = [
   {
     id: '1',
     slug: 'getting-started-with-nextjs-14',
@@ -178,31 +179,73 @@ Let's work together to create a healthier planet for future generations.
   }
 ];
 
+// Helper to create a slug from a title
+const createSlug = (title: string) => {
+  return title
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-');
+};
 
 // Simulate an API call
-export const getPosts = async ({
-  limit,
-  offset
-}: {
-  limit?: number;
-  offset?: number
-} = {}): Promise < Post[] > => {
-  let posts = [...mockPosts];
-  if (offset) {
-    posts = posts.slice(offset);
-  }
-  if (limit) {
-    posts = posts.slice(0, limit);
-  }
-  return new Promise(resolve => setTimeout(() => resolve(posts), 500));
+export const getPosts = async (): Promise < Post[] > => {
+  const sortedPosts = [...mockPosts].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  return new Promise(resolve => setTimeout(() => resolve(sortedPosts), 200));
 };
 
 export const getPostBySlug = async (slug: string): Promise < Post | null > => {
   const post = mockPosts.find(p => p.slug === slug);
-  return new Promise(resolve => setTimeout(() => resolve(post || null), 300));
+  return new Promise(resolve => setTimeout(() => resolve(post || null), 200));
 };
 
 export const getAllTags = async (): Promise < string[] > => {
   const tags = new Set(mockPosts.flatMap(p => p.tags));
   return new Promise(resolve => setTimeout(() => resolve(Array.from(tags)), 100));
+};
+
+// CUD operations
+export const createPost = async (data: Omit<Post, 'id' | 'slug' | 'createdAt'>) => {
+  const newPost: Post = {
+    ...data,
+    id: String(mockPosts.length + 1),
+    slug: createSlug(data.title),
+    createdAt: format(new Date(), 'MMMM d, yyyy'),
+  };
+  mockPosts.unshift(newPost); // Add to the beginning of the array
+  revalidatePath('/');
+  revalidatePath('/admin');
+  return new Promise(resolve => setTimeout(() => resolve(newPost), 200));
+};
+
+export const updatePost = async (id: string, data: Partial<Omit<Post, 'id' | 'createdAt'>>) => {
+  const postIndex = mockPosts.findIndex(p => p.id === id);
+  if (postIndex === -1) {
+    return null;
+  }
+  const originalPost = mockPosts[postIndex];
+  const updatedPost = {
+    ...originalPost,
+    ...data,
+    slug: data.title ? createSlug(data.title) : originalPost.slug,
+  };
+  mockPosts[postIndex] = updatedPost;
+  revalidatePath('/');
+  revalidatePath(`/posts/${originalPost.slug}`);
+  revalidatePath(`/posts/${updatedPost.slug}`);
+  revalidatePath('/admin');
+  return new Promise(resolve => setTimeout(() => resolve(updatedPost), 200));
+};
+
+export const deletePost = async (id: string) => {
+  const postIndex = mockPosts.findIndex(p => p.id === id);
+  if (postIndex === -1) {
+    return null;
+  }
+  const [deletedPost] = mockPosts.splice(postIndex, 1);
+  revalidatePath('/');
+  revalidatePath(`/posts/${deletedPost.slug}`);
+  revalidatePath('/admin');
+  return new Promise(resolve => setTimeout(() => resolve(deletedPost), 200));
 };
