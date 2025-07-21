@@ -221,18 +221,18 @@ export const createPost = async (data: Omit<Post, 'id' | 'slug' | 'createdAt'>) 
   return new Promise(resolve => setTimeout(() => resolve(newPost), 200));
 };
 
-export const updatePost = async (id: string, data: Partial<Omit<Post, 'id'|'slug'|'createdAt'>>) => {
+export const updatePost = async (id: string, data: Omit<Post, 'id' | 'slug' | 'createdAt'>) => {
   const postIndex = mockPosts.findIndex(p => p.id === id);
   if (postIndex === -1) {
     return null;
   }
   const originalPost = mockPosts[postIndex];
-  
-  // Create the updated post object, making sure to handle all fields
+
+  // Create the updated post object, merging all fields from the form
   const updatedPost: Post = {
     ...originalPost,
     ...data,
-    slug: data.title ? createSlug(data.title) : originalPost.slug,
+    slug: createSlug(data.title),
   };
 
   mockPosts[postIndex] = updatedPost;
