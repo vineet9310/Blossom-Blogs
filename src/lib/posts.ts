@@ -217,9 +217,8 @@ export const createPost = async (data: Omit<Post, 'id' | 'slug' | 'createdAt'>) 
     createdAt: format(new Date(), 'MMMM d, yyyy'),
   };
   mockPosts.unshift(newPost); // Add to the beginning of the array
-  revalidatePath('/');
-  revalidatePath('/admin');
-  revalidatePath('/admin/posts');
+  revalidatePath('/', 'layout');
+  revalidatePath('/admin', 'layout');
   return new Promise(resolve => setTimeout(() => resolve(newPost), 200));
 };
 
@@ -239,9 +238,8 @@ export const updatePost = async (id: string, data: Partial<Omit<Post, 'id' | 'cr
   mockPosts[postIndex] = updatedPost;
   
   // Revalidate all necessary paths
-  revalidatePath('/');
-  revalidatePath('/admin');
-  revalidatePath('/admin/posts');
+  revalidatePath('/', 'layout');
+  revalidatePath('/admin', 'layout');
   revalidatePath(`/posts/${originalPost.slug}`);
   if (originalPost.slug !== updatedPost.slug) {
     revalidatePath(`/posts/${updatedPost.slug}`);
@@ -256,8 +254,8 @@ export const deletePost = async (id: string) => {
     return null;
   }
   const [deletedPost] = mockPosts.splice(postIndex, 1);
-  revalidatePath('/');
+  revalidatePath('/', 'layout');
+  revalidatePath('/admin', 'layout');
   revalidatePath(`/posts/${deletedPost.slug}`);
-  revalidatePath('/admin');
   return new Promise(resolve => setTimeout(() => resolve(deletedPost), 200));
 };
