@@ -218,21 +218,21 @@ export const createPost = async (data: Omit<Post, 'id' | 'slug' | 'createdAt'>) 
   mockPosts.unshift(newPost); // Add to the beginning of the array
   revalidatePath('/');
   revalidatePath('/admin');
+  revalidatePath('/admin/posts');
   return new Promise(resolve => setTimeout(() => resolve(newPost), 200));
 };
 
-export const updatePost = async (id: string, data: Omit<Post, 'id' | 'slug' | 'createdAt'>) => {
+export const updatePost = async (id: string, data: Partial<Omit<Post, 'id' | 'createdAt'>>) => {
   const postIndex = mockPosts.findIndex(p => p.id === id);
   if (postIndex === -1) {
     return null;
   }
   const originalPost = mockPosts[postIndex];
 
-  // Create the updated post object, merging all fields from the form
   const updatedPost: Post = {
     ...originalPost,
     ...data,
-    slug: createSlug(data.title),
+    slug: data.title ? createSlug(data.title) : originalPost.slug,
   };
 
   mockPosts[postIndex] = updatedPost;
