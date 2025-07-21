@@ -45,7 +45,6 @@ export function LoginForm() {
       if (result.success) {
         toast({ title: 'Login Successful', description: 'Redirecting to dashboard...' });
         router.push('/admin');
-        router.refresh();
       } else {
         toast({
           title: 'Login Failed',
