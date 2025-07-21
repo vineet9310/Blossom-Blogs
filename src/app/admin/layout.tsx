@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Home, Newspaper, Settings, LogOut } from 'lucide-react';
+import { Home, Newspaper } from 'lucide-react';
 
 import {
   SidebarProvider,
@@ -14,7 +14,6 @@ import {
   SidebarInset,
 } from '@/components/ui/sidebar';
 import { Logo } from '@/components/icons';
-import { LogoutButton } from '@/components/auth/LogoutButton';
 
 export default function AdminLayout({
   children,
@@ -60,9 +59,6 @@ export default function AdminLayout({
                             Back to Site
                         </Link>
                     </SidebarMenuButton>
-                </SidebarMenuItem>
-                 <SidebarMenuItem>
-                    <LogoutButton />
                 </SidebarMenuItem>
             </SidebarMenu>
           </SidebarFooter>
