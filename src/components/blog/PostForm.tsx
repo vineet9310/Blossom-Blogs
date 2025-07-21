@@ -5,14 +5,15 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import type { Post } from '@/types';
 import { createPost, updatePost } from '@/lib/posts';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Sparkles } from 'lucide-react';
 import React from 'react';
+import { generatePostContent } from '@/ai/flows/generate-post-content';
 
 const formSchema = z.object({
   title: z.string().min(2, {
@@ -38,6 +39,7 @@ export default function PostForm({ post }: PostFormProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [isGenerating, setIsGenerating] = React.useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -49,6 +51,39 @@ export default function PostForm({ post }: PostFormProps) {
       content: post?.content || '',
     },
   });
+
+  const handleGenerateContent = async () => {
+    const title = form.getValues('title');
+    if (!title) {
+        toast({
+            title: 'Title is required',
+            description: 'Please enter a title before generating content.',
+            variant: 'destructive',
+        });
+        return;
+    }
+
+    setIsGenerating(true);
+    try {
+        const result = await generatePostContent({ title });
+        if (result.content) {
+            form.setValue('content', result.content, { shouldValidate: true });
+            toast({ title: 'Content Generated', description: 'AI has generated the post content.' });
+        } else {
+            throw new Error('AI did not return content.');
+        }
+    } catch (error) {
+        console.error("AI content generation failed:", error);
+        toast({
+            title: 'Generation Failed',
+            description: 'Could not generate content. Please try again.',
+            variant: 'destructive',
+        });
+    } finally {
+        setIsGenerating(false);
+    }
+  };
+
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
@@ -138,15 +173,24 @@ export default function PostForm({ post }: PostFormProps) {
           name="content"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Content (Markdown)</FormLabel>
+              <div className="flex justify-between items-center">
+                <FormLabel>Content (Markdown)</FormLabel>
+                <Button type="button" variant="outline" size="sm" onClick={handleGenerateContent} disabled={isGenerating}>
+                    {isGenerating ? <Loader2 className="animate-spin" /> : <Sparkles className="mr-2" />}
+                    Generate with AI
+                </Button>
+              </div>
               <FormControl>
-                <Textarea placeholder="Write your post content here..." {...field} rows={15} />
+                <Textarea placeholder="Write your post content here, or generate it with AI." {...field} rows={15} />
               </FormControl>
+              <FormDescription>
+                The AI will generate content based on the post title.
+              </FormDescription>
               <FormMessage />
             </FormItem>
           )}
         />
-        <Button type="submit" disabled={isSubmitting}>
+        <Button type="submit" disabled={isSubmitting || isGenerating}>
           {isSubmitting ? <Loader2 className="animate-spin" /> : (post ? 'Update Post' : 'Create Post')}
         </Button>
       </form>
