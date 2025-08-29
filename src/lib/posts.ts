@@ -1,4 +1,3 @@
-
 'use server';
 
 import type { Post } from '@/types';
@@ -7,9 +6,7 @@ import { revalidatePath } from 'next/cache';
 import fs from 'fs/promises';
 import path from 'path';
 
-// Use a temporary file to persist data across server reloads in development
 const dataFilePath = path.join(process.cwd(), '.tmp', 'posts.json');
-
 const now = new Date();
 
 const initialMockPosts: Post[] = [
@@ -184,25 +181,21 @@ Let's work together to create a healthier planet for future generations.
   }
 ];
 
-// Helper to ensure the data file exists and read it
 const readPosts = async (): Promise<Post[]> => {
   try {
     await fs.mkdir(path.dirname(dataFilePath), { recursive: true });
     await fs.access(dataFilePath);
   } catch {
-    // If file doesn't exist, create it with initial data
     await fs.writeFile(dataFilePath, JSON.stringify(initialMockPosts, null, 2));
   }
   const data = await fs.readFile(dataFilePath, 'utf-8');
   return JSON.parse(data);
 };
 
-// Helper to write data to the file
 const writePosts = async (posts: Post[]): Promise<void> => {
   await fs.writeFile(dataFilePath, JSON.stringify(posts, null, 2));
 };
 
-// Helper to create a slug from a title
 const createSlug = (title: string) => {
   return title
     .toLowerCase()
@@ -212,7 +205,6 @@ const createSlug = (title: string) => {
     .replace(/-+/g, '-');
 };
 
-// API-like functions
 export const getPosts = async (): Promise<Post[]> => {
   const posts = await readPosts();
   return posts.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
@@ -230,68 +222,54 @@ export const getAllTags = async (): Promise<string[]> => {
   return Array.from(tags);
 };
 
-// CUD operations
 export const createPost = async (data: Omit<Post, 'id' | 'slug' | 'createdAt'>): Promise<Post> => {
   const posts = await readPosts();
   const newPost: Post = {
     ...data,
-    id: String(Date.now()), // Use timestamp for a more unique ID
+    id: String(Date.now()),
     slug: createSlug(data.title),
     createdAt: format(new Date(), 'MMMM d, yyyy'),
   };
-  
-  posts.unshift(newPost); // Add to the beginning of the array
+  posts.unshift(newPost);
   await writePosts(posts);
-
   revalidatePath('/', 'layout');
   revalidatePath('/admin', 'layout');
-  
   return newPost;
 };
 
 export const updatePost = async (id: string, data: Partial<Omit<Post, 'id' | 'createdAt'>>): Promise<Post | null> => {
   let posts = await readPosts();
   const postIndex = posts.findIndex(p => p.id === id);
-
   if (postIndex === -1) {
     return null;
   }
-
   const originalPost = posts[postIndex];
-
   const updatedPost: Post = {
     ...originalPost,
     ...data,
     slug: data.title ? createSlug(data.title) : originalPost.slug,
   };
-
   posts[postIndex] = updatedPost;
   await writePosts(posts);
-
   revalidatePath('/', 'layout');
   revalidatePath('/admin', 'layout');
   revalidatePath(`/posts/${originalPost.slug}`);
   if (data.title && originalPost.slug !== updatedPost.slug) {
     revalidatePath(`/posts/${updatedPost.slug}`);
   }
-  
   return updatedPost;
 };
 
 export const deletePost = async (id: string): Promise<Post | null> => {
   let posts = await readPosts();
   const postIndex = posts.findIndex(p => p.id === id);
-
   if (postIndex === -1) {
     return null;
   }
-
   const [deletedPost] = posts.splice(postIndex, 1);
   await writePosts(posts);
-
   revalidatePath('/', 'layout');
   revalidatePath('/admin', 'layout');
   revalidatePath(`/posts/${deletedPost.slug}`);
-
   return deletedPost;
 };

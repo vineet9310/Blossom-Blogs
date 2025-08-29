@@ -1,4 +1,3 @@
-
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -12,13 +11,16 @@ import { Textarea } from '@/components/ui/textarea';
 import type { Post } from '@/types';
 import { createPost, updatePost } from '@/lib/posts';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Sparkles, Image as ImageIcon, Upload, Link as LinkIcon } from 'lucide-react';
+import { Loader2, Sparkles, Image as ImageIcon, Upload, Link as LinkIcon, Settings2 } from 'lucide-react';
 import React from 'react';
 import { generatePostContent } from '@/ai/flows/generate-post-content';
 import { generateCoverImage } from '@/ai/flows/generate-cover-image';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import NextImage from 'next/image';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
 
 const formSchema = z.object({
   title: z.string().min(2, {
@@ -46,6 +48,9 @@ export default function PostForm({ post }: PostFormProps) {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [isGeneratingContent, setIsGeneratingContent] = React.useState(false);
   const [isGeneratingImage, setIsGeneratingImage] = React.useState(false);
+  const [isDragging, setIsDragging] = React.useState(false);
+  const [uploadedImage, setUploadedImage] = React.useState<string | null>(null);
+  const [aspectRatio, setAspectRatio] = React.useState('16:9');
 
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -108,10 +113,11 @@ export default function PostForm({ post }: PostFormProps) {
 
     setIsGeneratingImage(true);
     try {
-        const result = await generateCoverImage({ title });
+        const result = await generateCoverImage({ title, aspectRatio });
         if (result.imageUrl) {
             form.setValue('coverImage', result.imageUrl, { shouldValidate: true });
-            toast({ title: 'Image Generated', description: 'AI has generated the cover image.' });
+            setUploadedImage(null);
+            toast({ title: 'Image Generated', description: `AI has generated a ${aspectRatio} cover image.` });
         } else {
             throw new Error('AI did not return an image URL.');
         }
@@ -140,9 +146,34 @@ export default function PostForm({ post }: PostFormProps) {
       }
       const reader = new FileReader();
       reader.onloadend = () => {
-        form.setValue('coverImage', reader.result as string, { shouldValidate: true });
+        const result = reader.result as string;
+        form.setValue('coverImage', result, { shouldValidate: true });
+        setUploadedImage(result);
       };
       reader.readAsDataURL(file);
+    }
+  };
+
+  const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      handleFileChange({ target: { files: [file] } } as any);
     }
   };
 
@@ -223,7 +254,13 @@ export default function PostForm({ post }: PostFormProps) {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Cover Image</FormLabel>
-              <Card>
+              <Card
+                onDragEnter={handleDragEnter}
+                onDragLeave={handleDragLeave}
+                onDragOver={handleDragOver}
+                onDrop={handleDrop}
+                className={isDragging ? 'border-primary' : ''}
+              >
                 <CardContent className="p-4 space-y-4">
                   {coverImageValue ? (
                     <div className="relative aspect-video w-full max-w-md mx-auto rounded-md overflow-hidden border">
@@ -263,12 +300,46 @@ export default function PostForm({ post }: PostFormProps) {
                     <TabsContent value="url">
                       <div className="flex items-center gap-2">
                          <FormControl>
-                            <Input placeholder="https://example.com/image.png" {...field} disabled={isGenerating} />
+                            <Input 
+                              placeholder="https://example.com/image.png" 
+                              {...field} 
+                              onChange={(e) => {
+                                field.onChange(e);
+                                setUploadedImage(null);
+                              }}
+                              disabled={isGenerating} 
+                            />
                          </FormControl>
                       </div>
                     </TabsContent>
                   </Tabs>
                   
+                  <Collapsible>
+                    <CollapsibleTrigger asChild>
+                        <Button variant="ghost" className="w-full justify-center text-sm">
+                            <Settings2 className="mr-2 h-4 w-4" />
+                            Advanced Options
+                        </Button>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="space-y-4 pt-4">
+                        <p className="text-sm font-medium">Aspect Ratio</p>
+                        <RadioGroup defaultValue="16:9" onValueChange={setAspectRatio} className="flex space-x-4">
+                            <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="16:9" id="r1" />
+                                <Label htmlFor="r1">Landscape (16:9)</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="1:1" id="r2" />
+                                <Label htmlFor="r2">Square (1:1)</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="9:16" id="r3" />
+                                <Label htmlFor="r3">Portrait (9:16)</Label>
+                            </div>
+                        </RadioGroup>
+                    </CollapsibleContent>
+                  </Collapsible>
+
                   <div className="relative">
                     <div className="absolute inset-0 flex items-center">
                         <span className="w-full border-t" />
@@ -317,4 +388,3 @@ export default function PostForm({ post }: PostFormProps) {
     </Form>
   );
 }
-

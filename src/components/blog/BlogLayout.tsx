@@ -1,12 +1,11 @@
 'use client';
 
-import { useState, useTransition, useMemo } from 'react';
+import { useState, useTransition } from 'react';
 import type { Post } from '@/types';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { PostCard } from '@/components/blog/PostCard';
-import { Tag } from '@/components/blog/Tag';
-import { intelligentSearch } from '@/ai/flows/intelligent-search';
+import { PostCard } from './PostCard';
+import { intelligentSearch } from '../../ai/flows/intelligent-search';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Search } from 'lucide-react';
 
@@ -19,24 +18,21 @@ type BlogLayoutProps = {
 
 export function BlogLayout({ initialPosts, allTags }: BlogLayoutProps) {
   const [allPosts] = useState<Post[]>(initialPosts);
+  const [filteredPosts, setFilteredPosts] = useState<Post[]>(allPosts);
   const [displayedPosts, setDisplayedPosts] = useState<Post[]>(initialPosts.slice(0, POSTS_PER_PAGE));
   const [visibleCount, setVisibleCount] = useState(POSTS_PER_PAGE);
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeTag, setActiveTag] = useState<string | null>(null);
   
   const [isSearching, startSearchTransition] = useTransition();
   const { toast } = useToast();
 
-  const filteredPosts = useMemo(() => {
-    if (!activeTag) return allPosts;
-    return allPosts.filter(post => post.tags.includes(activeTag));
-  }, [activeTag, allPosts]);
-
   const handleSearchSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!searchTerm.trim()) {
-      handleTagClick(activeTag);
+      setFilteredPosts(allPosts);
+      setDisplayedPosts(allPosts.slice(0, POSTS_PER_PAGE));
+      setVisibleCount(POSTS_PER_PAGE);
       return;
     }
 
@@ -53,7 +49,7 @@ export function BlogLayout({ initialPosts, allTags }: BlogLayoutProps) {
         );
 
         const relevantPosts = relevanceChecks.filter(p => p.isRelevant);
-        setActiveTag(null);
+        setFilteredPosts(relevantPosts);
         setDisplayedPosts(relevantPosts);
         setVisibleCount(relevantPosts.length);
 
@@ -69,14 +65,6 @@ export function BlogLayout({ initialPosts, allTags }: BlogLayoutProps) {
         });
       }
     });
-  };
-
-  const handleTagClick = (tag: string | null) => {
-    setActiveTag(tag);
-    setSearchTerm('');
-    const newFilteredPosts = tag ? allPosts.filter(post => post.tags.includes(tag)) : allPosts;
-    setDisplayedPosts(newFilteredPosts.slice(0, POSTS_PER_PAGE));
-    setVisibleCount(POSTS_PER_PAGE);
   };
   
   const loadMorePosts = () => {
@@ -111,13 +99,6 @@ export function BlogLayout({ initialPosts, allTags }: BlogLayoutProps) {
         </Button>
       </form>
 
-      <div className="flex flex-wrap justify-center gap-2 mb-12">
-        <Tag tag="All" isActive={activeTag === null} onClick={() => handleTagClick(null)} />
-        {allTags.map(tag => (
-          <Tag key={tag} tag={tag} isActive={tag === activeTag} onClick={() => handleTagClick(tag)} />
-        ))}
-      </div>
-
       {isSearching && (
         <div className="text-center py-8">
             <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
@@ -129,10 +110,7 @@ export function BlogLayout({ initialPosts, allTags }: BlogLayoutProps) {
          <div className="text-center py-16 border-2 border-dashed rounded-lg">
             <h3 className="text-2xl font-headline font-semibold">No Posts Found</h3>
             <p className="text-muted-foreground mt-2">
-              {activeTag 
-                ? `There are no posts with the tag "${activeTag}".`
-                : "Try a different search or select another tag."
-              }
+              Try a different search term.
             </p>
          </div>
       )}
@@ -155,3 +133,4 @@ export function BlogLayout({ initialPosts, allTags }: BlogLayoutProps) {
     </>
   );
 }
+
